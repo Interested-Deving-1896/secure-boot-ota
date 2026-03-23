@@ -41,7 +41,7 @@ cmake ..
 cmake --build .
 ./secure_boot_ota_demoOption 3: Manual Compilationgcc -Wall -Wextra -std=c11 -I include src/*.c -o secure_boot_demo
 ./secure_boot_demo📝 Expected OutputUpon successful execution, the console output will resemble:============================================================
-       SECURE BOOT + OTA UPDATE DEMO (C Implementation)
+       SECURE BOOT + OTA UPDATE (C Implementation)
 ============================================================
 [INFO] Cryptographic subsystem initialized
 [INFO] Secure boot initialized
