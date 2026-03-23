@@ -5,7 +5,7 @@
 
 > Production-grade secure firmware patterns for resource-constrained devices
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/yourusername/embedded-security-reference/ci.yml)](https://github.com/yourusername/embedded-security-reference/actions)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/maximilianfeldthusen/embedded-security-reference/ci.yml)](https://github.com/yourusername/embedded-security-reference/actions)
 [![Coverage](https://img.shields.io/codecov/c/github/yourusername/embedded-security-reference)](https://codecov.io/gh/yourusername/embedded-security-reference)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
