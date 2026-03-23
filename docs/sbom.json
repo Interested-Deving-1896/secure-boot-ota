@@ -1,1 +1,91 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-03-22T00:00:00Z",
+    "tools": [
+      {
+        "vendor": "CycloneDX",
+        "name": "cdxgen",
+        "version": "9.0.0"
+      }
+    ],
+    "component": {
+      "type": "application",
+      "name": "secure-embedded-firmware",
+      "version": "1.0.0",
+      "purl": "pkg:generic/secure-embedded-firmware@1.0.0"
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "name": "mbedTLS",
+      "version": "3.5.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:generic/mbedtls@3.5.0",
+      "cpe": "cpe:2.3:a:mbed-tls:mbed-tls:3.5.0:*:*:*:*:*:*:*",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://www.trustmbed.com/"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "CMSIS-NN",
+      "version": "2.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:generic/cmsis-nn@2.0.0",
+      "cpe": "cpe:2.3:a:arm:cmsis-nn:2.0.0:*:*:*:*:*:*:*"
+    },
+    {
+      "type": "framework",
+      "name": "FreeRTOS",
+      "version": "10.5.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:generic/freertos@10.5.1",
+      "cpe": "cpe:2.3:a:freertos:freertos:10.5.1:*:*:*:*:*:*:*"
+    },
+    {
+      "type": "tool",
+      "name": "GCC ARM Embedded",
+      "version": "12.2.rel1",
+      "purl": "pkg:generic/gcc-arm@12.2.rel1"
+    }
+  ],
+  "vulnerabilities": [],
+  "services": [],
+  "dependencies": [
+    {
+      "ref": "pkg:generic/secure-embedded-firmware@1.0.0",
+      "dependsOn": [
+        "pkg:generic/mbedtls@3.5.0",
+        "pkg:generic/cmsis-nn@2.0.0",
+        "pkg:generic/freertos@10.5.1"
+      ]
+    }
+  ]
+}
 
