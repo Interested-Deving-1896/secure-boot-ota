@@ -126,7 +126,7 @@ Before submitting a PR, please ensure:
 *   The output matches the expected behavior described in `README.md`.
 *   Any new features have been tested locally.
 
-## 💬 Questions?
+##  Questions?
 
 If you have questions about the architecture or the security concepts being demonstrated, feel free to open an Issue or start a Discussion.
 
