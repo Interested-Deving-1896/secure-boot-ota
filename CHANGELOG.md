@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-*   Initial release of the Secure Boot + OTA Update Demo.
+*   Initial release of the Secure Boot + OTA Update.
 *   Mock implementation of SHA-256 hashing and digital signing.
 *   A/B partition simulation logic.
 *   Rollback protection mechanism.
