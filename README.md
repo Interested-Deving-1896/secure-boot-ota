@@ -3,7 +3,7 @@ A demonstration project simulating the lifecycle of a secure embedded device. Th
 
 > **⚠️ Disclaimer:** This is a **demonstration project** intended for educational purposes. It uses mock implementations for cryptographic operations and hardware interactions. **Do not use this code in production environments.**
 
-## 🏗️ Architecture Overview
+##  Architecture Overview
 
 The project is structured into four main logical components:
 
@@ -14,7 +14,7 @@ The project is structured into four main logical components:
 | **Secure Boot** | `secure_boot.*` | Verifies bootloader and kernel integrity before execution. Maintains an event log of verification attempts. |
 | **OTA Manager** | `ota_manager.*` | Manages the update lifecycle: checking versions, downloading binaries, verifying signatures, installing to secondary partitions, and handling rollbacks. |
 
-## 🔑 Key Security Concepts Demonstrated
+##  Key Security Concepts Demonstrated
 
 *   **Chain of Trust:** The system verifies the bootloader first, then the kernel, ensuring only trusted code executes.
 *   **A/B Partitioning:** Simulates an A/B update scheme (`PARTITION_ACTIVE` vs `PARTITION_INACTIVE`) to prevent bricking the device if an update fails.
@@ -27,7 +27,7 @@ The project is structured into four main logical components:
 *   GNU Make (for Option 1)
 *   CMake (optional, for Option 2)
 
-## 🚀 Building and Running
+##  Building and Running
 
 ### Option 1: Using Make (Recommended)
 
@@ -81,7 +81,7 @@ Cryptographic Algorithms: Replace the mock XOR loops with real implementations (
 Storage: Replace malloc and file I/O with flash memory drivers and static memory pools to avoid fragmentation.
 Networking: Replace the mocked download with secure TLS/HTTPS connections featuring certificate pinning.
 
-📄 License
+ License
 MIT License - See LICENSE file for details.
 
 ---
@@ -93,7 +93,7 @@ MIT License - See LICENSE file for details.
 
 Thank you for your interest in contributing to this educational project! Since this is a demonstration of secure embedded concepts, we welcome contributions that improve clarity, add educational value, or fix bugs in the simulation logic.
 
-## 🎯 Scope of Contributions
+##  Scope of Contributions
 
 Please focus your efforts on:
 *   **Educational Clarity:** Improving comments, documentation, or code structure to better explain the concepts.
@@ -101,12 +101,12 @@ Please focus your efforts on:
 *   **Build System:** Fixing issues with the Makefile or CMake configuration.
 *   **Testing:** Adding unit tests for the crypto or OTA logic (using mock frameworks).
 
-## 🚫 What We Are Not Looking For
+##  What We Are Not Looking For
 
 *   **Production-Ready Crypto:** Do not attempt to integrate real cryptographic libraries (mbedTLS, OpenSSL) directly into the core logic unless it is strictly for educational comparison. The goal is to keep the code lightweight and understandable.
 *   **Hardware Abstraction Layers (HAL):** Avoid adding specific hardware drivers (STM32, ESP32, etc.). Keep the code portable and generic.
 
-## 📝 Guidelines
+##  Guidelines
 
 ### Code Style
 *   Follow the existing C coding style (K&R style braces, 4-space indentation).
