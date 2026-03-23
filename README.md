@@ -21,7 +21,7 @@ The project is structured into four main logical components:
 *   **Rollback Protection:** Automatically restores the previous working firmware if the new update is corrupted or fails verification.
 *   **Manifest Verification:** Firmware is cryptographically signed. The `firmware_manifest_t` structure ensures the version, timestamp, and hash match the signature before installation.
 
-## 🛠️ Prerequisites
+##  Prerequisites
 
 *   A C compiler (GCC or Clang)
 *   GNU Make (for Option 1)
