@@ -1,6 +1,4 @@
 
-Here are the three files formatted for your GitHub repository, based on the secure boot and OTA update demo code you provided.1. README.md# Secure Boot + OTA Update Demo (C Implementation)
-
 A demonstration project simulating the lifecycle of a secure embedded device. This project covers bootloader/kernel verification at startup and secure firmware update management (Over-The-Air).
 
 > **⚠️ Disclaimer:** This is a **demonstration project** intended for educational purposes. It uses mock implementations for cryptographic operations and hardware interactions. **Do not use this code in production environments.**
