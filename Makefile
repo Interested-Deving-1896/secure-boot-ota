@@ -1,56 +1,31 @@
 
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror -std=c11 -pedantic
-DEBUG_CFLAGS = -g -O0 -DDEBUG
-RELEASE_CFLAGS = -O2 -DNDEBUG
+CFLAGS = -Wall -Wextra -I./include -DUSE_HARDWARE_SECURITY=1 -DUSE_TRUSTZONE=1
+LDFLAGS = 
 
-INCLUDE_DIR = include
 SRC_DIR = src
+INC_DIR = include
 BUILD_DIR = build
-TEST_DIR = tests
 
-SRCS = $(wildcard $(SRC_DIR)/*.c)
+SRCS = $(wildcard $(SRC_DIR)/*.c) $(wildcard $(SRC_DIR)/platform_specific/*.c)
 OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SRCS))
-TEST_SRCS = $(wildcard $(TEST_DIR)/*.c)
-TEST_OBJS = $(patsubst $(TEST_DIR)/%.c,$(BUILD_DIR)/test_%.o,$(TEST_SRCS))
+TARGET = secure_boot_system
 
-TARGET = secure_boot_ota_demo
-TEST_TARGET = secure_boot_ota_tests
+.PHONY: all clean test
 
-.PHONY: all clean debug release test
-
-all: release
-
-debug: CFLAGS += $(DEBUG_CFLAGS)
-debug: $(TARGET)
-
-release: CFLAGS += $(RELEASE_CFLAGS)
-release: $(TARGET)
+all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	@mkdir -p $(BUILD_DIR)
-	$(CC) $(CFLAGS) -o $@ $^
+	$(CC) $(OBJS) -o $@ $(LDFLAGS)
 
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
-	@mkdir -p $(BUILD_DIR)
-	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c -o $@ $<
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
 
-test: $(TEST_TARGET)
-	./$(TEST_TARGET)
-
-$(TEST_TARGET): $(OBJS) $(TEST_OBJS)
-	@mkdir -p $(BUILD_DIR)
-	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -o $@ $^
-
-$(BUILD_DIR)/test_%.o: $(TEST_DIR)/%.c
-	@mkdir -p $(BUILD_DIR)
-	$(CC) $(CFLAGS) -I$(INCLUDE_DIR) -c -o $@ $<
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
 
 clean:
-	rm -rf $(BUILD_DIR) $(TARGET) $(TEST_TARGET)
+	rm -rf $(BUILD_DIR) $(TARGET)
 
-# Dependencies
-$(BUILD_DIR)/main.o: $(SRC_DIR)/main.c
-$(BUILD_DIR)/secure_boot.o: $(SRC_DIR)/secure_boot.c
-$(BUILD_DIR)/ota_manager.o: $(SRC_DIR)/ota_manager.c
-$(BUILD_DIR)/crypto_utils.o: $(SRC_DIR)/crypto_utils.c
+test: $(TARGET)
+	./$(TARGET)
