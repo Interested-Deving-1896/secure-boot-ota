@@ -16,10 +16,15 @@ See `docs/architecture.md` for detailed diagrams.
 ```bash
 make
 
+```
 
-Testing
+## Testing
+
+```bash
 
 make test
+
+```
 
 Security Model
 
@@ -27,5 +32,4 @@ Refer to docs/security_model.md.
 
 
 
-```text
 
