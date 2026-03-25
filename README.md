@@ -26,7 +26,7 @@ make test
 
 ```
 
-Security Model
+## Security Model
 
 Refer to docs/security_model.md.
 
