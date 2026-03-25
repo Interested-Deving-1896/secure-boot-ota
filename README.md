@@ -15,3 +15,6 @@ See `docs/architecture.md` for detailed diagrams.
 ## Building
 ```bash
 make
+
+
+make test
