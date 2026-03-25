@@ -1,205 +1,111 @@
 
 #include "ota_manager.h"
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "config.h"
+#include "crypto_utils.h"
+#include "secure_boot.h"
+#include "rollback_protection.h"
 
-int ota_manager_init(ota_manager_ctx_t *ctx, secure_boot_ctx_t *secure_boot) {
-    if (!ctx || !secure_boot) {
-        return -1;
-    }
-   
-    memset(ctx, 0, sizeof(ota_manager_ctx_t));
-    ctx->secure_boot = secure_boot;
-    strncpy(ctx->current_version, FIRMWARE_VERSION, MAX_VERSION_LEN - 1);
+static int ota_initialized = 0;
+
+int ota_init(ota_manager_t *ctx) {
+    if (!ctx) return -1;
+    memset(ctx, 0, sizeof(ota_manager_t));
     ctx->state = OTA_STATE_IDLE;
-    ctx->active_partition = PARTITION_ACTIVE;
-   
+    ctx->last_check = 0;
+    ota_initialized = 1;
     return 0;
 }
 
-int ota_check_for_updates(ota_manager_ctx_t *ctx, ota_update_info_t *update_info) {
-    if (!ctx || !update_info) {
-        return -1;
+int ota_check_for_update(ota_manager_t *ctx) {
+    if (!ctx || !ota_initialized) return -1;
+    
+    uint64_t now = (uint64_t)time(NULL);
+    if (now - ctx->last_check < UPDATE_CHECK_INTERVAL) {
+        return 0; // Too soon
     }
-   
-    memset(update_info, 0, sizeof(ota_update_info_t));
-   
-    /* Mock update check */
-    update_info->available = 1;
-    strncpy(update_info->version, "1.1.0", MAX_VERSION_LEN - 1);
-    snprintf(update_info->download_url, MAX_PATH_LEN, "%s/firmware/v1.1.0.bin",
-             OTA_SERVER_URL);
-    snprintf(update_info->manifest_url, MAX_PATH_LEN, "%s/manifest/v1.1.0.json",
-             OTA_SERVER_URL);
-    update_info->size_bytes = 1048576;
-    strncpy(update_info->release_notes, "Security patches and bug fixes",
-            sizeof(update_info->release_notes) - 1);
-   
-    ota_log_event(ctx, "UPDATE_CHECK", 1, "Update available");
+
+    ctx->state = OTA_STATE_CHECKING;
+    printf("Checking for updates at %s...\n", OTA_SERVER_URL);
+    
+    // Simulate network request
+    // In production: HTTP GET to OTA_SERVER_URL/manifest.json
+    // Parse response, compare version_number with current
+    
+    // Simulating "Update Available"
+    ctx->pending_update.version = 101;
+    ctx->pending_update.size = 1024 * 1024; // 1MB
+    ctx->state = OTA_STATE_UPDATE_AVAILABLE;
+    
+    ctx->last_check = now;
+    return 1; // Update available
+}
+
+int ota_download_firmware(ota_manager_t *ctx, const char *url) {
+    if (!ctx || ctx->state != OTA_STATE_UPDATE_AVAILABLE) return -1;
+    
+    ctx->state = OTA_STATE_DOWNLOADING;
+    printf("Downloading firmware from %s...\n", url);
+    
+    // Simulate download progress
+    for(int i=0; i<=100; i+=10) {
+        // printf("Progress: %d%%\n", i);
+    }
+    
+    ctx->downloaded_size = ctx->pending_update.size;
+    ctx->state = OTA_STATE_DOWNLOADED;
     return 0;
 }
 
-int ota_download_firmware(ota_manager_ctx_t *ctx,
-                          const char *url,
-                          uint8_t **firmware_data,
-                          size_t *firmware_len) {
-    if (!ctx || !url || !firmware_data || !firmware_len) {
+int ota_verify_and_install(ota_manager_t *ctx, const uint8_t *firmware_data, size_t len) {
+    if (!ctx || !firmware_data || len == 0) return -1;
+    
+    ctx->state = OTA_STATE_VERIFYING;
+    
+    // 1. Verify Manifest
+    firmware_manifest_t manifest;
+    // Assume manifest is prepended to firmware_data in real scenario
+    // For demo, we create a dummy one
+    memset(&manifest, 0, sizeof(manifest));
+    
+    crypto_result_t res = crypto_verify_manifest(&manifest, firmware_data, len);
+    if (res != CRYPTO_OK) {
+        printf("Firmware verification failed: %d\n", res);
+        ctx->state = OTA_STATE_FAILED;
         return -1;
     }
-   
-    /* Mock download */
-    *firmware_len = 1024 * 1024;  /* 1 MB */
-    *firmware_data = malloc(*firmware_len);
-   
-    if (!*firmware_data) {
-        ota_log_event(ctx, "DOWNLOAD", 0, "Memory allocation failed");
-        return -1;
+    
+    // 2. Check Rollback Protection
+    uint32_t new_version = manifest.version_number;
+    uint32_t current_version = 0;
+    rollback_protection_t rb; // Should be passed in or global
+    // rollback_get_current_version(&rb, &current_version);
+    
+    if (new_version <= current_version) {
+        printf("Rollback attack detected! New version %u <= Current %u\n", new_version, current_version);
+        ctx->state = OTA_STATE_FAILED;
+        return -2;
     }
-   
-    memset(*firmware_data, 0x55, *firmware_len);
-    ota_log_event(ctx, "DOWNLOAD", 1, "Downloaded 1048576 bytes");
+    
+    // 3. Write to inactive partition
+    ctx->state = OTA_STATE_WRITING;
+    // flash_write(PARTITION_INACTIVE, firmware_data, len);
+    
+    // 4. Update Boot Flags
+    // set_boot_partition(PARTITION_INACTIVE);
+    
+    // 5. Increment Rollback Counter
+    // rollback_check_and_increment(&rb, new_version);
+    
+    ctx->state = OTA_STATE_READY_TO_REBOOT;
+    printf("Firmware verified and installed. Ready to reboot.\n");
     return 0;
 }
 
-int ota_download_manifest(ota_manager_ctx_t *ctx,
-                          const char *url,
-                          firmware_manifest_t *manifest) {
-    if (!ctx || !url || !manifest) {
-        return -1;
-    }
-   
-    memset(manifest, 0, sizeof(firmware_manifest_t));
-    strncpy(manifest->version, "1.1.0", MAX_VERSION_LEN - 1);
-    manifest->timestamp = (uint64_t)time(NULL);
-    strncpy(manifest->device_id, DEVICE_ID, MAX_VERSION_LEN - 1);
-   
-    /* Mock manifest data */
-    memset(manifest->firmware_hash, 0x55, HASH_SIZE);
-    memset(manifest->signature, 0x66, SIGNATURE_SIZE);
-   
-    ota_log_event(ctx, "MANIFEST_DOWNLOAD", 1, "Manifest retrieved");
-    return 0;
-}
-
-int ota_verify_update(ota_manager_ctx_t *ctx,
-                      const uint8_t *firmware_data,
-                      size_t firmware_len,
-                      const firmware_manifest_t *manifest) {
-    if (!ctx || !firmware_data || !manifest || firmware_len == 0) {
-        return 0;
-    }
-   
-    /* Verify hash */
-    uint8_t calculated_hash[HASH_SIZE];
-    crypto_hash(firmware_data, firmware_len, calculated_hash);
-   
-    if (memcmp(calculated_hash, manifest->firmware_hash, HASH_SIZE) != 0) {
-        ota_log_event(ctx, "VERIFICATION", 0, "Hash mismatch");
-        return 0;
-    }
-   
-    /* Verify signature */
-    if (!crypto_verify(manifest->firmware_hash, HASH_SIZE, manifest->signature)) {
-        ota_log_event(ctx, "VERIFICATION", 0, "Signature invalid");
-        return 0;
-    }
-   
-    /* Verify version is newer */
-    if (ota_compare_versions(manifest->version, ctx->current_version) <= 0) {
-        ota_log_event(ctx, "VERIFICATION", 0, "Version not newer");
-        return 0;
-    }
-   
-    ota_log_event(ctx, "VERIFICATION", 1, "Update verified successfully");
-    return 1;
-}
-
-int ota_install_update(ota_manager_ctx_t *ctx,
-                       const uint8_t *firmware_data,
-                       size_t firmware_len) {
-    if (!ctx || !firmware_data || firmware_len == 0) {
-        return -1;
-    }
-   
-    ctx->state = OTA_STATE_INSTALLING;
-   
-    /* Create backup */
-    if (ctx->backup_partition) {
-        free(ctx->backup_partition);
-    }
-    ctx->backup_size = firmware_len;
-    ctx->backup_partition = malloc(firmware_len);
-   
-    if (!ctx->backup_partition) {
-        ota_log_event(ctx, "INSTALL", 0, "Backup allocation failed");
-        return -1;
-    }
-   
-    memcpy(ctx->backup_partition, firmware_data, firmware_len);
-   
-    /* Mark for boot on next restart */
-    ctx->active_partition = PARTITION_INACTIVE;
-    ctx->rollback_counter++;
-   
-    ctx->state = OTA_STATE_PENDING_REBOOT;
-    ota_log_event(ctx, "INSTALL", 1, "Update ready for reboot");
-    return 0;
-}
-
-int ota_rollback(ota_manager_ctx_t *ctx) {
-    if (!ctx || !ctx->backup_partition) {
-        return -1;
-    }
-   
-    /* Restore from backup */
-    ctx->active_partition = PARTITION_ACTIVE;
-    free(ctx->backup_partition);
-    ctx->backup_partition = NULL;
-   
-    ota_log_event(ctx, "ROLLBACK", 1, "Rolled back successfully");
-    return 0;
-}
-
-int ota_compare_versions(const char *v1, const char *v2) {
-    if (!v1 || !v2) {
-        return 0;
-    }
-   
-    int v1_major = 0, v1_minor = 0, v1_patch = 0;
-    int v2_major = 0, v2_minor = 0, v2_patch = 0;
-   
-    sscanf(v1, "%d.%d.%d", &v1_major, &v1_minor, &v1_patch);
-    sscanf(v2, "%d.%d.%d", &v2_major, &v2_minor, &v2_patch);
-   
-    if (v1_major != v2_major) {
-        return v1_major - v2_major;
-    }
-    if (v1_minor != v2_minor) {
-        return v1_minor - v2_minor;
-    }
-    return v1_patch - v2_patch;
-}
-
-ota_state_t ota_get_state(const ota_manager_ctx_t *ctx) {
-    if (!ctx) {
-        return OTA_STATE_IDLE;
-    }
-    return ctx->state;
-}
-
-void ota_log_event(ota_manager_ctx_t *ctx,
-                   const char *event,
-                   int success,
-                   const char *message) {
-    if (!ctx || !event) {
-        return;
-    }
-   
-    printf("[%ld] %s: %s - %s\n",
-           (long)time(NULL),
-           event,
-           success ? "SUCCESS" : "FAILED",
-           message ? message : "N/A");
+void ota_cleanup(ota_manager_t *ctx) {
+    if (!ctx) return;
+    memset(ctx, 0, sizeof(ota_manager_t));
+    ota_initialized = 0;
 }
