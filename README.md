@@ -17,4 +17,20 @@ See `docs/architecture.md` for detailed diagrams.
 make
 
 
+Testing
+
 make test
+
+Security Model
+
+Refer to docs/security_model.md.
+
+
+**`LICENSE`**
+```text
+MIT License
+
+Copyright (c) 2026 Secure Boot Project
+
+Permission is hereby granted... (Standard MIT text)
+
