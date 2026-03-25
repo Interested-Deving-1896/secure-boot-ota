@@ -1,14 +1,19 @@
-cmake_minimum_required(VERSION 3.14)
-project(secure_boot_ota_demo VERSION 1.0.0 LANGUAGES C)
+
+cmake_minimum_required(VERSION 3.10)
+project(SecureBootOTA C)
 
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
 
-# Include directories
-include_directories(${CMAKE_SOURCE_DIR}/include)
+include_directories(include)
 
-# Main executable
-add_executable(${PROJECT_NAME}
-    src/main.c
-    src/secure_boot
+file(GLOB SOURCES
+    "src/*.c"
+    "src/platform_specific/*.c"
+)
 
+add_executable(${PROJECT_NAME} ${SOURCES})
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    USE_HARDWARE_SECURITY=1
+    USE_TRUSTZONE=1
+)
