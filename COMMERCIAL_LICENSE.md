@@ -4,7 +4,7 @@
 
 Licensees holding valid commercial mafeforge licenses may use this software in
 accordance with the the terms contained in a written agreement between
-you and The mafeforge. Alternatively, the terms and conditions that were
+you and mafeforge. Alternatively, the terms and conditions that were
 accepted by the licensee when buying and/or downloading the
 software do apply.
 
