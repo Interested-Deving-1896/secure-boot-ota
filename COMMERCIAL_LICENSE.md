@@ -1,7 +1,7 @@
 
 # Commercial License Agreement
 
-This **Commercial License Agreement** ("Agreement") is between **[Your Company Name]**, ("Licensor"), and **[Licensee Name/Company]**, ("Licensee").
+This **Commercial License Agreement** ("Agreement") is between **[mafeforge]**, ("Licensor"), and **[Licensee Name/Company]**, ("Licensee").
 
 By purchasing this commercial license, the Licensee agrees to the following terms:
 
