@@ -20,35 +20,79 @@
  */
 
 
+#include "ota.h"
 #include "crypto.h"
+#include "config.h"
+#include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 /*
+ * OTA logic
+ *
  * NOTE:
- * This is NOT real crypto.
- * Replace with mbedTLS or hardware crypto engine.
+ * - currently RAM-based (not realistic for big firmware)
+ * - should stream directly to flash
  */
 
-int crypto_init(void)
+static secure_boot_ctx_t *g_sb = NULL;
+
+int ota_init(ota_ctx_t *ctx, secure_boot_ctx_t *sb)
 {
+    if (!ctx || !sb) return -1;
+
+    memset(ctx, 0, sizeof(*ctx));
+    strncpy(ctx->current_version, FW_VERSION, sizeof(ctx->current_version)-1);
+
+    g_sb = sb;
+    ctx->state = OTA_IDLE;
     return 0;
 }
 
-int crypto_hash(const uint8_t *data, size_t len, uint8_t *out)
+int ota_check(ota_ctx_t *ctx)
 {
-    if (!data || !out) return -1;
+    if (!ctx) return -1;
 
-    memset(out, 0, HASH_SIZE);
+    // Stub: always "update available"
+    return 1;
+}
 
-    for (size_t i = 0; i < len; i++) {
-        out[i % HASH_SIZE] ^= data[i];
+int ota_perform_update(ota_ctx_t *ctx)
+{
+    if (!ctx) return -1;
+
+    ctx->state = OTA_DOWNLOADING;
+
+    size_t fw_len = 256 * 1024; // 256 KB test image
+
+    if (fw_len > MAX_FW_SIZE) {
+        ctx->state = OTA_ERROR;
+        return -1;
     }
 
-    return 0;
-}
+    uint8_t *fw = malloc(fw_len);
+    if (!fw) {
+        ctx->state = OTA_ERROR;
+        return -1;
+    }
 
-int crypto_verify(const uint8_t *hash, const uint8_t *sig)
-{
-    // fake check
-    return (hash && sig);
+    memset(fw, 0xAA, fw_len);
+
+    ctx->state = OTA_VERIFYING;
+
+    uint8_t hash[HASH_SIZE];
+    crypto_hash(fw, fw_len, hash);
+
+    if (!crypto_verify(hash, hash)) {
+        ctx->state = OTA_ERROR;
+        free(fw);
+        return -1;
+    }
+
+    // TODO: write to inactive partition (flash driver missing)
+
+    ctx->state = OTA_DONE;
+    free(fw);
+
+    return 0;
 }
