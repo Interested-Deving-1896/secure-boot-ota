@@ -23,373 +23,44 @@ If you have any questions about which license applies to your use case, or if yo
 ---
 
 
+```markdown
+# Secure Boot + OTA Firmware — Code Explanation
 
+## Overview
 
- Filesystem (realistic embedded layout)
-secure-boot-ota-fw/
-├── include/
-│   ├── config.h
-│   ├── platform.h
-│   ├── rtos_sim.h
-│   ├── crypto.h
-│   ├── secure_boot.h
-│   └── ota.h
-├── src/
-│   ├── main.c
-│   ├── rtos_sim.c
-│   ├── crypto.c
-│   ├── secure_boot.c
-│   └── ota.c
-├── Makefile
-└── README.md
+This project simulates an embedded firmware system with:
 
+- Secure boot verification
+- OTA (Over-The-Air) update mechanism
+- RTOS-style multitasking (simulated with pthreads)
+- Basic hardware abstraction
 
-📄 include/config.h
-#ifndef CONFIG_H
-#define CONFIG_H
+The implementation is intentionally incomplete to resemble real firmware under development.
 
-// Device identity (would normally come from OTP/flash)
-#define DEVICE_ID          "dev-001"
+---
 
-// Firmware
-#define FW_VERSION         "1.0.0"
+## System Architecture
 
-// Memory constraints (simulated target)
-#define MAX_FW_SIZE        (512 * 1024)   // 512 KB
-#define HASH_SIZE          32
-#define SIG_SIZE           64
+```
 
-// OTA
-#define OTA_CHECK_INTERVAL_MS   10000
+main.c
+├── sys_task       → system initialization + boot status
+├── ota_task       → periodic OTA updates
+└── rtos_sim       → task scheduling (pthread-based)
 
-#endif
+secure_boot.c ↔ crypto.c   → firmware validation
+ota.c         ↔ crypto.c   → update verification
+platform.h                → hardware abstraction (stub)
 
+````
 
-include/platform.h
-#ifndef PLATFORM_H
-#define PLATFORM_H
+---
 
-#include <stdint.h>
+## Execution Flow
 
-/*
- * Platform abstraction (very thin)
- * In real firmware this wraps HAL / BSP
- */
+### 1. Program Entry (`main.c`)
 
-void platform_log(const char *fmt, ...);
-
-// TODO: replace with actual flash driver
-int flash_write(uint32_t addr, const uint8_t *data, uint32_t len);
-int flash_read(uint32_t addr, uint8_t *data, uint32_t len);
-
-#endif
-
-
- include/rtos_sim.h
-#ifndef RTOS_SIM_H
-#define RTOS_SIM_H
-
-#include <stdint.h>
-
-typedef void *(*task_fn_t)(void *);
-
-int rtos_create_task(task_fn_t fn, const char *name, void *arg);
-void rtos_delay(uint32_t ms);
-
-#endif
-
-
-include/crypto.h
-#ifndef CRYPTO_H
-#define CRYPTO_H
-
-#include <stdint.h>
-#include <stddef.h>
-
-int crypto_init(void);
-
-// WARNING: placeholder only
-int crypto_hash(const uint8_t *data, size_t len, uint8_t *out);
-int crypto_verify(const uint8_t *hash, const uint8_t *sig);
-
-#endif
-
-
-include/secure_boot.h
-#ifndef SECURE_BOOT_H
-#define SECURE_BOOT_H
-
-#include <stdint.h>
-
-typedef enum {
-    BOOT_UNKNOWN = 0,
-    BOOT_OK,
-    BOOT_FAIL
-} boot_state_t;
-
-typedef struct {
-    boot_state_t state;
-} secure_boot_ctx_t;
-
-int secure_boot_init(secure_boot_ctx_t *ctx);
-int secure_boot_verify(secure_boot_ctx_t *ctx,
-                       const uint8_t *image,
-                       uint32_t len);
-
-#endif
-
-
-include/ota.h
-#ifndef OTA_H
-#define OTA_H
-
-#include <stdint.h>
-#include "secure_boot.h"
-
-typedef enum {
-    OTA_IDLE = 0,
-    OTA_DOWNLOADING,
-    OTA_VERIFYING,
-    OTA_DONE,
-    OTA_ERROR
-} ota_state_t;
-
-typedef struct {
-    ota_state_t state;
-    char current_version[16];
-} ota_ctx_t;
-
-int ota_init(ota_ctx_t *ctx, secure_boot_ctx_t *sb);
-int ota_check(ota_ctx_t *ctx);
-int ota_perform_update(ota_ctx_t *ctx);
-
-#endif
-
-
-src/rtos_sim.c
-#include "rtos_sim.h"
-#include <pthread.h>
-#include <unistd.h>
-#include <stdio.h>
-
-int rtos_create_task(task_fn_t fn, const char *name, void *arg)
-{
-    pthread_t t;
-
-    if (pthread_create(&t, NULL, fn, arg) != 0) {
-        printf("rtos: failed to start %s\n", name);
-        return -1;
-    }
-
-    pthread_detach(t);
-    printf("rtos: started %s\n", name);
-    return 0;
-}
-
-void rtos_delay(uint32_t ms)
-{
-    usleep(ms * 1000);
-}
-
-
-src/crypto.c
-#include "crypto.h"
-#include <string.h>
-
-/*
- * NOTE:
- * This is NOT real crypto.
- * Replace with mbedTLS or hardware crypto engine.
- */
-
-int crypto_init(void)
-{
-    return 0;
-}
-
-int crypto_hash(const uint8_t *data, size_t len, uint8_t *out)
-{
-    if (!data || !out) return -1;
-
-    memset(out, 0, HASH_SIZE);
-
-    for (size_t i = 0; i < len; i++) {
-        out[i % HASH_SIZE] ^= data[i];
-    }
-
-    return 0;
-}
-
-int crypto_verify(const uint8_t *hash, const uint8_t *sig)
-{
-    // fake check
-    return (hash && sig);
-}
-
-
-src/secure_boot.c
-#include "secure_boot.h"
-#include "crypto.h"
-#include <string.h>
-
-/*
- * Secure boot (simplified)
- * Real system would verify against ROM-stored hash/key
- */
-
-int secure_boot_init(secure_boot_ctx_t *ctx)
-{
-    if (!ctx) return -1;
-
-    memset(ctx, 0, sizeof(*ctx));
-    ctx->state = BOOT_UNKNOWN;
-    return 0;
-}
-
-int secure_boot_verify(secure_boot_ctx_t *ctx,
-                       const uint8_t *image,
-                       uint32_t len)
-{
-    if (!ctx || !image || len == 0) {
-        ctx->state = BOOT_FAIL;
-        return -1;
-    }
-
-    // TODO: compare against trusted hash in flash/ROM
-
-    ctx->state = BOOT_OK;
-    return 0;
-}
-
-
- src/ota.c
-#include "ota.h"
-#include "crypto.h"
-#include "config.h"
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-
-/*
- * OTA logic
- *
- * NOTE:
- * - currently RAM-based (not realistic for big firmware)
- * - should stream directly to flash
- */
-
-static secure_boot_ctx_t *g_sb = NULL;
-
-int ota_init(ota_ctx_t *ctx, secure_boot_ctx_t *sb)
-{
-    if (!ctx || !sb) return -1;
-
-    memset(ctx, 0, sizeof(*ctx));
-    strncpy(ctx->current_version, FW_VERSION, sizeof(ctx->current_version)-1);
-
-    g_sb = sb;
-    ctx->state = OTA_IDLE;
-    return 0;
-}
-
-int ota_check(ota_ctx_t *ctx)
-{
-    if (!ctx) return -1;
-
-    // Stub: always "update available"
-    return 1;
-}
-
-int ota_perform_update(ota_ctx_t *ctx)
-{
-    if (!ctx) return -1;
-
-    ctx->state = OTA_DOWNLOADING;
-
-    size_t fw_len = 256 * 1024; // 256 KB test image
-
-    if (fw_len > MAX_FW_SIZE) {
-        ctx->state = OTA_ERROR;
-        return -1;
-    }
-
-    uint8_t *fw = malloc(fw_len);
-    if (!fw) {
-        ctx->state = OTA_ERROR;
-        return -1;
-    }
-
-    memset(fw, 0xAA, fw_len);
-
-    ctx->state = OTA_VERIFYING;
-
-    uint8_t hash[HASH_SIZE];
-    crypto_hash(fw, fw_len, hash);
-
-    if (!crypto_verify(hash, hash)) {
-        ctx->state = OTA_ERROR;
-        free(fw);
-        return -1;
-    }
-
-    // TODO: write to inactive partition (flash driver missing)
-
-    ctx->state = OTA_DONE;
-    free(fw);
-
-    return 0;
-}
-
-
- src/main.c (RTOS-style)
-#include <stdio.h>
-#include "rtos_sim.h"
-#include "secure_boot.h"
-#include "ota.h"
-#include "crypto.h"
-#include "config.h"
-
-static secure_boot_ctx_t sb;
-static ota_ctx_t ota;
-
-/* System task */
-void *sys_task(void *arg)
-{
-    (void)arg;
-
-    crypto_init();
-    secure_boot_init(&sb);
-    ota_init(&ota, &sb);
-
-    uint8_t dummy[] = "boot";
-    secure_boot_verify(&sb, dummy, sizeof(dummy));
-
-    while (1) {
-        printf("[SYS] boot=%d\n", sb.state);
-        rtos_delay(5000);
-    }
-}
-
-/* OTA task */
-void *ota_task(void *arg)
-{
-    (void)arg;
-
-    while (1) {
-        rtos_delay(OTA_CHECK_INTERVAL_MS);
-
-        if (ota_check(&ota)) {
-            printf("[OTA] update found\n");
-
-            if (ota_perform_update(&ota) == 0) {
-                printf("[OTA] update done\n");
-            } else {
-                printf("[OTA] update failed\n");
-            }
-        }
-    }
-}
-
+```c
 int main(void)
 {
     printf("fw start (%s)\n", FW_VERSION);
@@ -398,550 +69,378 @@ int main(void)
     rtos_create_task(ota_task, "ota", NULL);
 
     while (1) {
-        rtos_delay(1000); // idle
+        rtos_delay(1000);
     }
-
-    return 0;
 }
+````
 
+**What happens:**
 
-Makefile
-CC=gcc
-CFLAGS=-Wall -Wextra -std=c11 -Iinclude
+* Prints firmware version
+* Starts two concurrent tasks:
 
-SRC=$(wildcard src/*.c)
-OUT=fw
-
-all:
-	$(CC) $(CFLAGS) $(SRC) -lpthread -o $(OUT)
-
-clean:
-	rm -f $(OUT)
-
-
- README.md (human, embedded tone)
-Secure Boot + OTA (Embedded-style demo)
-
-Notes:
-- This is NOT production-ready.
-- Crypto is stubbed (XOR-based).
-- OTA uses RAM buffer (not suitable for real devices).
-- No actual networking yet.
-
-Intended direction:
-- Replace crypto with mbedTLS
-- Stream OTA directly to flash
-- Add TLS + cert validation
-- Hook into real RTOS (FreeRTOS)
-
-Build:
-  make
-  ./fw
-
-
- 
-
- Secure Boot + OTA Firmware (Explained)
- Overview
-
-This project simulates a real embedded firmware system with:
-
-    Secure boot verification
-
-    OTA (Over-The-Air) updates
-
-    RTOS-style multitasking (via POSIX threads)
-
-    Hardware abstraction (flash, logging)
-
-It is intentionally not production-ready, but structured like real firmware under development.
- Architecture
-
-+---------------------+
-|      main.c         |
-|---------------------|
-|  sys_task           |
-|  ota_task           |
-+----------+----------+
-           |
-           v
-+---------------------+
-|    rtos_sim.c       |  -> pthread wrapper
-+---------------------+
-
-+---------------------+       +----------------------+
-|  secure_boot.c      |<----->|     crypto.c         |
-+---------------------+       +----------------------+
-
-+---------------------+
-|      ota.c          |
-+---------------------+
-
-+---------------------+
-|   platform (stub)   |
-+---------------------+
-
- File-by-File Explanation
- config.h
-
-Defines system-wide constants:
-
-#define DEVICE_ID "dev-001"
-#define FW_VERSION "1.0.0"
-#define MAX_FW_SIZE (512 * 1024)
-
- Represents flash + device constraints.
- platform.h
-
-Hardware abstraction layer (HAL):
-
-int flash_write(uint32_t addr, const uint8_t *data, uint32_t len);
-
- Currently stubbed — no real flash driver.
- rtos_sim.*
-
-Simulates an RTOS using pthread.
-Key idea:
-
-rtos_create_task(fn, name, arg);
-
-Internally:
-
-pthread_create(...)
-
- Mimics FreeRTOS task creation, but runs on Linux.
- crypto.*
-
- Fake crypto implementation
-Hash:
-
-out[i % HASH_SIZE] ^= data[i];
-
-    XOR-based
-
-    NOT secure
-
-    Placeholder for:
-
-        mbedTLS
-
-        hardware crypto engine
-
-Verify:
-
-return (hash && sig);
-
-Always passes if pointers exist.
-📄 secure_boot.*
-
-Simulates firmware verification.
-
-ctx->state = BOOT_OK;
-
- Missing real logic:
-
-    No signature validation
-
-    No ROM-stored key
-
-    No anti-rollback
-
- ota.*
-
-Handles firmware updates.
-Flow:
-
-IDLE
-  ↓
-DOWNLOADING (malloc)
-  ↓
-VERIFYING (fake crypto)
-  ↓
-DONE / ERROR
-
-Key issues (intentional realism):
-
-    Uses RAM buffer (bad for real devices)
-
-    No networking
-
-    No flash writes
-
- main.c
-
-Creates two RTOS-style tasks:
- sys_task
-
-crypto_init();
-secure_boot_init();
-ota_init();
-secure_boot_verify();
-
-Loop:
-
-[SYS] boot=1
-
- ota_task
-
-if (ota_check()) {
-    ota_perform_update();
-}
-
-Runs every:
-
-OTA_CHECK_INTERVAL_MS = 10000 ms
-
- Runtime Behavior
-Program Start
-
-fw start (1.0.0)
-rtos: started sys
-rtos: started ota
-
- System Task Output (every 5s)
-
-[SYS] boot=1
-
-Meaning:
-
-    BOOT_OK = 1
-
- OTA Task Output (every 10s)
-
-[OTA] update found
-[OTA] update done
-
- Why always?
-
-ota_check() → always returns 1
-
-📊 Simulated Execution Timeline
-
-Time (s)   Event
---------   ------------------------
-0          Firmware starts
-0          Tasks created
-5          [SYS] boot=1
-10         OTA check → update
-10         [OTA] update found
-10         [OTA] update done
-10         [SYS] boot=1
-15         [SYS] boot=1
-20         OTA runs again
-
- Embedded Realism Notes
- Not realistic (yet)
-
-    Full firmware loaded into RAM
-
-    No flash partitioning
-
-    No watchdog
-
-    No rollback mechanism
-
-    No TLS / networking
-
- Real firmware would add
-
-    Dual-bank flash (A/B)
-
-    Secure key storage (OTP / eFuse)
-
-    TLS download
-
-    Streaming OTA
-
-    Bootloader verification stage
-
- Build & Run
-
-make
-./fw
-
- Final Output Example
-
-fw start (1.0.0)
-rtos: started sys
-rtos: started ota
-[SYS] boot=1
-[OTA] update found
-[OTA] update done
-[SYS] boot=1
-
- Key Takeaways
-
-    Structure mimics real embedded firmware
-
-    Clear separation of:
-
-        boot
-
-        crypto
-
-        OTA
-
-        RTOS
-
-    Designed to evolve into:
-
-        FreeRTOS
-
-        Real hardware target (ESP32 / STM32)
-
- 
-    
-
-
-
-
-This project simulates a structured embedded firmware system with:
-
-- Secure boot verification
-- OTA (Over-The-Air) updates
-- RTOS-style multitasking (via POSIX threads)
-- Hardware abstraction (flash, logging)
-
-It is intentionally not production-ready, but resembles real firmware under development.
+  * `sys_task`
+  * `ota_task`
+* Main thread becomes an idle loop
 
 ---
 
-## Architecture
+## RTOS Simulation (`rtos_sim.c`)
 
-+---------------------+
-main.c
-sys_task
-ota_task
-+----------+----------+
-
-       |
-       v
-
-+---------------------+
-| rtos_sim.c | -> pthread wrapper
-+---------------------+
-
-+---------------------+ +----------------------+
-| secure_boot.c |<----->| crypto.c |
-+---------------------+ +----------------------+
-
-+---------------------+
-| ota.c |
-+---------------------+
-
-+---------------------+
-| platform (stub) |
-+---------------------+
-
-
----
-
-## File-by-File Explanation
-
-### config.h
-
-Defines system-wide constants:
+### Task Creation
 
 ```c
-#define DEVICE_ID "dev-001"
-#define FW_VERSION "1.0.0"
-#define MAX_FW_SIZE (512 * 1024)
+pthread_create(&t, NULL, fn, arg);
+```
 
-Represents flash and device constraints.
-platform.h
+* Each task runs in its own thread
+* Detached threads (no join)
+* Mimics FreeRTOS-style scheduling
 
-Hardware abstraction layer (HAL):
+### Delay
 
-int flash_write(uint32_t addr, const uint8_t *data, uint32_t len);
+```c
+usleep(ms * 1000);
+```
 
-Currently stubbed; no real flash driver is implemented.
-rtos_sim.*
+* Converts milliseconds to microseconds
+* Simulates RTOS delay/yield
 
-Simulates an RTOS using pthread.
+---
 
-Key API:
+## System Task (`sys_task`)
 
-rtos_create_task(fn, name, arg);
-
-Internally uses:
-
-pthread_create(...)
-
-Mimics FreeRTOS-style task creation on a desktop system.
-crypto.*
-
-Fake crypto implementation (placeholder only).
-
-Hash function:
-
-out[i % HASH_SIZE] ^= data[i];
-
-    XOR-based
-
-    Not secure
-
-    Intended to be replaced with mbedTLS or hardware crypto
-
-Verification:
-
-return (hash && sig);
-
-Always succeeds if pointers are non-null.
-secure_boot.*
-
-Simulates firmware verification.
-
-ctx->state = BOOT_OK;
-
-Missing real-world features:
-
-    Signature validation
-
-    Trusted key storage (ROM/OTP)
-
-    Anti-rollback protection
-
-ota.*
-
-Handles firmware updates.
-
-State flow:
-
-IDLE
-  ↓
-DOWNLOADING (malloc)
-  ↓
-VERIFYING (fake crypto)
-  ↓
-DONE / ERROR
-
-Known limitations:
-
-    Uses RAM buffer (not realistic for large firmware)
-
-    No networking
-
-    No flash write implementation
-
-main.c
-
-Creates two RTOS-style tasks.
-sys_task
-
+```c
 crypto_init();
-secure_boot_init();
-ota_init();
-secure_boot_verify();
+secure_boot_init(&sb);
+ota_init(&ota, &sb);
 
-Loop output:
+uint8_t dummy[] = "boot";
+secure_boot_verify(&sb, dummy, sizeof(dummy));
+```
 
-[SYS] boot=1
+### Responsibilities
 
-ota_task
+1. Initialize subsystems:
 
-if (ota_check()) {
-    ota_perform_update();
+   * Crypto
+   * Secure boot
+   * OTA
+
+2. Perform boot verification
+
+3. Periodically log system state:
+
+```c
+printf("[SYS] boot=%d\n", sb.state);
+```
+
+### Boot States
+
+```c
+BOOT_UNKNOWN = 0
+BOOT_OK      = 1
+BOOT_FAIL    = 2
+```
+
+---
+
+## Secure Boot (`secure_boot.c`)
+
+### Initialization
+
+```c
+ctx->state = BOOT_UNKNOWN;
+```
+
+### Verification
+
+```c
+if (!ctx || !image || len == 0) {
+    ctx->state = BOOT_FAIL;
+    return -1;
 }
 
-Runs every:
+ctx->state = BOOT_OK;
+```
 
-OTA_CHECK_INTERVAL_MS = 10000
+### Key Points
 
-Runtime Behavior
-Program Start
+* Always succeeds if inputs are valid
+* Does not actually verify:
 
+  * Signature
+  * Hash
+  * Trusted key
+
+### Missing Real Features
+
+* Root of trust (ROM/OTP)
+* Signature validation (ECDSA/RSA)
+* Anti-rollback protection
+
+---
+
+## Crypto Module (`crypto.c`)
+
+### Hash Function
+
+```c
+for (size_t i = 0; i < len; i++) {
+    out[i % HASH_SIZE] ^= data[i];
+}
+```
+
+**Behavior:**
+
+* Produces a fixed-size (32-byte) output
+* Uses XOR accumulation
+
+**Limitations:**
+
+* Not cryptographically secure
+* Vulnerable to collisions
+
+---
+
+### Signature Verification
+
+```c
+return (hash && sig);
+```
+
+**Behavior:**
+
+* Returns success if pointers are non-null
+* No real verification performed
+
+---
+
+## OTA System (`ota.c`)
+
+### Initialization
+
+```c
+strncpy(ctx->current_version, FW_VERSION, ...);
+ctx->state = OTA_IDLE;
+```
+
+---
+
+### Update Check
+
+```c
+return 1;
+```
+
+* Always reports an update available
+
+---
+
+### Update Process
+
+#### Step 1: Download
+
+```c
+size_t fw_len = 256 * 1024;
+uint8_t *fw = malloc(fw_len);
+memset(fw, 0xAA, fw_len);
+```
+
+* Allocates 256 KB firmware buffer
+* Fills with dummy data
+
+#### Step 2: Validate Size
+
+```c
+if (fw_len > MAX_FW_SIZE)
+```
+
+* Ensures firmware fits device constraints
+
+---
+
+#### Step 3: Hash
+
+```c
+crypto_hash(fw, fw_len, hash);
+```
+
+* Computes fake hash
+
+---
+
+#### Step 4: Verify
+
+```c
+if (!crypto_verify(hash, hash))
+```
+
+* Always succeeds (same pointer passed twice)
+
+---
+
+#### Step 5: Finalize
+
+```c
+ctx->state = OTA_DONE;
+free(fw);
+```
+
+* Frees memory
+* Marks update complete
+
+---
+
+### OTA State Machine
+
+```
+OTA_IDLE
+   ↓
+OTA_DOWNLOADING
+   ↓
+OTA_VERIFYING
+   ↓
+OTA_DONE / OTA_ERROR
+```
+
+---
+
+## Configuration (`config.h`)
+
+```c
+#define MAX_FW_SIZE (512 * 1024)
+#define HASH_SIZE   32
+#define SIG_SIZE    64
+```
+
+Defines:
+
+* Memory limits
+* Crypto sizes
+* OTA interval
+
+---
+
+## Platform Layer (`platform.h`)
+
+```c
+int flash_write(...)
+int flash_read(...)
+```
+
+### Purpose
+
+* Abstract hardware-specific operations
+
+### Current Status
+
+* Not implemented
+* Placeholder for real drivers
+
+---
+
+## Runtime Behavior
+
+### Startup Output
+
+```
 fw start (1.0.0)
 rtos: started sys
 rtos: started ota
+```
 
-System Task Output (every 5 seconds)
+---
 
+### Periodic Output
+
+#### System Task (every 5 seconds)
+
+```
 [SYS] boot=1
+```
 
-Indicates:
+---
 
-    BOOT_OK = 1
+#### OTA Task (every 10 seconds)
 
-OTA Task Output (every 10 seconds)
-
+```
 [OTA] update found
 [OTA] update done
+```
 
-Reason:
+---
 
-ota_check() → always returns 1
+## Execution Timeline
 
-Simulated Execution Timeline
+```
+Time    Event
+-----   ----------------------------
+0s      Firmware starts
+0s      Tasks created
+5s      System logs boot state
+10s     OTA update triggered
+10s     Update completes
+15s     System logs again
+20s     OTA repeats
+```
 
-Time (s)   Event
---------   ------------------------
-0          Firmware starts
-0          Tasks created
-5          [SYS] boot=1
-10         OTA check → update
-10         [OTA] update found
-10         [OTA] update done
-10         [SYS] boot=1
-15         [SYS] boot=1
-20         OTA runs again
+---
 
-Embedded Realism Notes
-Not realistic (yet)
+## Key Limitations
 
-    Full firmware loaded into RAM
+### Memory
 
-    No flash partitioning
+* Entire firmware loaded into RAM
+* Not scalable for real devices
 
-    No watchdog timer
+### Security
 
-    No rollback mechanism
+* No real cryptography
+* No signature validation
+* No trust anchor
 
-    No TLS or networking
+### Storage
 
-Real firmware would include
+* No flash writing
+* No partition management
 
-    Dual-bank flash (A/B partitions)
+### Networking
 
-    Secure key storage (OTP / eFuse)
+* No OTA transport (HTTP/TLS)
 
-    TLS-based download
+---
 
-    Streaming OTA (no full RAM buffering)
+## What This Code Demonstrates
 
-    Bootloader-stage verification
+* Task-based firmware structure
+* Separation of concerns
+* OTA workflow logic
+* Secure boot integration points
 
-Build & Run
+---
 
-make
-./fw
+## What Is Missing for Real Firmware
 
-Final Output Example
+* Bootloader stage verification
+* Flash partitioning (A/B scheme)
+* Streaming OTA (no full buffering)
+* TLS-secured download
+* Hardware crypto acceleration
+* Watchdog integration
 
-fw start (1.0.0)
-rtos: started sys
-rtos: started ota
-[SYS] boot=1
-[OTA] update found
-[OTA] update done
-[SYS] boot=1
+---
 
-Key Takeaways
+## Summary
 
-    Structure resembles real embedded firmware
+This code provides a realistic skeleton of embedded firmware:
 
-    Separation of concerns:
+* The structure is representative of production systems
+* The logic flow matches real OTA + secure boot pipelines
+* The implementations are placeholders intended for future replacement
 
-        secure boot
-
-        crypto
-
-        OTA
-
-        RTOS
-
-    Designed to evolve toward real hardware platforms
-
-
+```
+```
 
 
 
