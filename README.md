@@ -16,7 +16,7 @@ This project is **dual-licensed** under two licenses:
 - **Choose GPL v3** if you are working on open-source projects or if you are happy to share your modifications under the same license.
 - **Choose the Commercial License** if you need to use the software in a proprietary or closed-source project, or if you want to avoid the copyleft requirements of the GPL.
 
-If you have any questions about which license applies to your use case, or if you would like to discuss commercial licensing options, please contact us at [info@mafeforge.com].
+If you have any questions about which license applies to your use case, or if you would like to discuss commercial licensing options, please contact us at [info.mafeforge@pm.me].
 
 
 
