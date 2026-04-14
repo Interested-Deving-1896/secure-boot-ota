@@ -439,8 +439,8 @@ This code provides a realistic skeleton of embedded firmware:
 * The logic flow matches real OTA + secure boot pipelines
 * The implementations are placeholders intended for future replacement
 
-```
-```
+
+
 
 
 
