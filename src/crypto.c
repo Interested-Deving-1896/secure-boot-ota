@@ -20,27 +20,35 @@
  */
 
 
- #include "rtos_sim.h"
-#include <pthread.h>
-#include <unistd.h>
-#include <stdio.h>
+#include "crypto.h"
+#include <string.h>
 
-int rtos_create_task(task_fn_t fn, const char *name, void *arg)
+/*
+ * NOTE:
+ * This is NOT real crypto.
+ * Replace with mbedTLS or hardware crypto engine.
+ */
+
+int crypto_init(void)
 {
-    pthread_t t;
-
-    if (pthread_create(&t, NULL, fn, arg) != 0) {
-        printf("rtos: failed to start %s\n", name);
-        return -1;
-    }
-
-    pthread_detach(t);
-    printf("rtos: started %s\n", name);
     return 0;
 }
 
-void rtos_delay(uint32_t ms)
+int crypto_hash(const uint8_t *data, size_t len, uint8_t *out)
 {
-    usleep(ms * 1000);
+    if (!data || !out) return -1;
+
+    memset(out, 0, HASH_SIZE);
+
+    for (size_t i = 0; i < len; i++) {
+        out[i % HASH_SIZE] ^= data[i];
+    }
+
+    return 0;
 }
 
+int crypto_verify(const uint8_t *hash, const uint8_t *sig)
+{
+    // fake check
+    return (hash && sig);
+}
