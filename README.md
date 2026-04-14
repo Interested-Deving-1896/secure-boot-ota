@@ -23,7 +23,7 @@ If you have any questions about which license applies to your use case, or if yo
 ---
 
 
-```
+
 # Secure Boot + OTA Firmware — Code Explanation
 
 ## Overview
